@@ -1,0 +1,17 @@
+{
+  "name": "udemy-clone",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "start": "npm run start --workspace server",
+    "dev": "npm run dev --workspace server",
+    "client": "npm run dev --workspace client"
+  },
+  "dependencies": {
+    "@cloudinary/react": "^1.14.4",
+    "@cloudinary/url-gen": "^1.22.0"
+  }
+}
