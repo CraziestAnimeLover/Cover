@@ -505,41 +505,41 @@ export const togglePublishCourse = async (req, res) => {
   }
 };
 
-// @desc    Enroll in course
-// @route   POST /api/courses/:id/enroll
-// @access  Private
-export const enrollCourse = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.id);
+// // @desc    Enroll in course
+// // @route   POST /api/courses/:id/enroll
+// // @access  Private
+// export const enrollCourse = async (req, res) => {
+//   try {
+//     const course = await Course.findById(req.params.id);
     
-    if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
-    }
+//     if (!course) {
+//       return res.status(404).json({ message: 'Course not found' });
+//     }
     
-    const alreadyEnrolled = await Enrollment.findOne({
-      user: req.user._id,
-      course: course._id,
-    });
+//     const alreadyEnrolled = await Enrollment.findOne({
+//       user: req.user._id,
+//       course: course._id,
+//     });
     
-    if (alreadyEnrolled) {
-      return res.status(400).json({ message: 'Already enrolled in this course' });
-    }
+//     if (alreadyEnrolled) {
+//       return res.status(400).json({ message: 'Already enrolled in this course' });
+//     }
     
-    const enrollment = await Enrollment.create({
-      user: req.user._id,
-      course: course._id,
-    });
+//     const enrollment = await Enrollment.create({
+//       user: req.user._id,
+//       course: course._id,
+//     });
     
-    // Update course total students
-    await Course.findByIdAndUpdate(course._id, {
-      $inc: { totalStudents: 1 }
-    });
+//     // Update course total students
+//     await Course.findByIdAndUpdate(course._id, {
+//       $inc: { totalStudents: 1 }
+//     });
     
-    res.status(201).json(enrollment);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+//     res.status(201).json(enrollment);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 // @desc    Update lecture progress
 // @route   POST /api/courses/:courseId/progress/:lectureId

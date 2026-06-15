@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchCourseById, enrollInCourse } from '../../features/course/courseSlice';
+import { fetchCourseById } from '../../features/course/courseSlice'; // removed enrollInCourse
 import { 
   FiStar, FiUsers, FiClock, FiBookOpen, FiPlay, FiCheck, 
   FiChevronDown, FiChevronUp, FiX 
@@ -20,17 +20,20 @@ const CourseDetails = () => {
     dispatch(fetchCourseById(id));
   }, [dispatch, id]);
 
-  const handleEnroll = async () => {
+  // ✅ Redirect to checkout (no direct enrollment)
+  const handleEnroll = () => {
     if (!user) {
-  navigate('/student-login');
-  return;
-}
-    try {
-      await dispatch(enrollInCourse(id)).unwrap();
-      navigate('/my-learning');
-    } catch (error) {
-      toast.error('Failed to enroll in course');
+      navigate('/student-login');
+      return;
     }
+    const course = currentCourse?.course || currentCourse;
+    navigate('/checkout', { 
+      state: { 
+        courseId: id, 
+        coursePrice: course?.price, 
+        courseTitle: course?.title 
+      } 
+    });
   };
 
   if (isLoading) {
@@ -54,7 +57,6 @@ const CourseDetails = () => {
 
   return (
     <div className="pb-16 font-sans selection:bg-orange-500/20">
-      
       {/* Hero Section with Pricing Card */}
       <div className="bg-slate-900 text-white relative overflow-hidden rounded-b-[32px] shadow-md">
         <div className="absolute top-[-20%] right-[-10%] w-96 h-96 bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />

@@ -137,9 +137,9 @@ export const createRazorpayOrder = async (req, res) => {
 
 export const verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId, name, email, phone, referralCode } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, courseId, amount } = req.body;
 
-    // Verify signature
+    // 1. Verify signature
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -150,53 +150,74 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: 'Invalid payment signature' });
     }
 
-    // Payment is valid – now create user account and enrollment
-    let user = await User.findOne({ email });
-    if (!user) {
-      const tempPassword = Math.random().toString(36).slice(-8);
-      const hashedPassword = await bcrypt.hash(tempPassword, 10);
-      user = await User.create({
-        name,
-        email,
-        phone,
-        password: hashedPassword,
-        role: 'student',
-        referralCode: generateReferralCode(name, email),
-        isVerified: true,
-      });
-
-      // Handle sponsor (referral)
-      let sponsor = null;
-      if (referralCode) sponsor = await User.findOne({ referralCode });
-      if (sponsor) {
-        user.referredBy = sponsor._id;
-        await user.save();
-        // Place in MLM tree
-        await MLMService.createTreeNode(user._id, sponsor._id);
-      } else {
-        await MLMService.createTreeNode(user._id, null);
-      }
-    }
-
-    // Enroll in course
+    // 2. Get course
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
+    let user;
+    const finalAmount = amount || course.price;
+
+    // 3. If user is logged in (token provided)
+    if (req.user && req.user._id) {
+      user = await User.findById(req.user._id);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+    } else {
+      // 4. Fallback for registration flow (new user without token)
+      const { name, email, phone, referralCode } = req.body;
+      if (!name || !email || !phone) {
+        return res.status(400).json({ message: 'Missing registration details' });
+      }
+      // Check if user already exists (should not happen in registration flow)
+      user = await User.findOne({ email });
+      if (!user) {
+        const tempPassword = Math.random().toString(36).slice(-8);
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        user = await User.create({
+          name, email, phone,
+          password: hashedPassword,
+          role: 'student',
+          referralCode: generateReferralCode(name, email),
+          isVerified: true,
+        });
+        // Handle sponsor
+        let sponsor = null;
+        if (referralCode) sponsor = await User.findOne({ referralCode });
+        if (sponsor) {
+          user.referredBy = sponsor._id;
+          await user.save();
+          await MLMService.createTreeNode(user._id, sponsor._id);
+        } else {
+          await MLMService.createTreeNode(user._id, null);
+        }
+      }
+    }
+
+    // 5. Check if already enrolled
+    const existingEnrollment = await Enrollment.findOne({ user: user._id, course: courseId });
+    if (existingEnrollment) {
+      return res.status(400).json({ message: 'Already enrolled in this course' });
+    }
+
+    // 6. Create enrollment
     const enrollment = await Enrollment.create({
       user: user._id,
       course: courseId,
-      amount: course.price,
+      amount: finalAmount,
       paymentId: razorpay_payment_id,
     });
 
-    await sendPaymentConfirmation(user, course, course.price);
-    
-    // Distribute commissions
-    await MLMService.distributeCommission(user._id, course.price, courseId);
+    // 7. Update course student count
+    await Course.findByIdAndUpdate(courseId, { $inc: { totalStudents: 1 } });
 
-    res.json({ message: 'Payment verified and account created', enrollment });
+    // 8. Send email confirmation
+    await sendPaymentConfirmation(user, course, finalAmount);
+
+    // 9. Distribute MLM commissions
+    await MLMService.distributeCommission(user._id, finalAmount, courseId);
+
+    res.json({ success: true, message: 'Payment verified and enrolled', enrollment });
   } catch (error) {
-    console.error('Payment verification error:', error);
-    res.status(500).json({ message: 'Payment verification failed' });
+    console.error('❌ Payment verification error:', error);
+    res.status(500).json({ message: error.message });
   }
 };

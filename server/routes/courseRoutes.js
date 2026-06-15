@@ -13,7 +13,7 @@ import {
   updateLecture,
   deleteLecture,
   togglePublishCourse,
-  enrollCourse,
+  // enrollCourse,
   updateProgress,
   addReview,
   getMyCourses
@@ -41,7 +41,7 @@ router.route('/:id')
   .delete(protect, deleteCourse);
 
 router.patch('/:id/publish', protect, togglePublishCourse);
-router.post('/:id/enroll', protect, enrollCourse);
+// router.post('/:id/enroll', protect, enrollCourse);
 router.post('/:id/reviews', protect, addReview);
 router.post('/:courseId/progress/:lectureId', protect, updateProgress);
 

@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../../features/auth/authSlice";
 import { FaApple, FaDiscord, FaGoogle } from "react-icons/fa";
-import { FiUser, FiLock } from "react-icons/fi";
+import { FiUser, FiLock, FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 const StudentLogin = () => {
@@ -52,11 +52,27 @@ const StudentLogin = () => {
     }
   };
 
+  const handleClose = () => {
+    navigate("/");
+  };
+
   return (
-    <div className="min-h-screen flex bg-[#F8FAFC] items-center justify-center p-4 lg:p-8 font-sans selection:bg-orange-500/20">
+    <div className="min-h-screen flex bg-[#F8FAFC] items-center justify-center p-4 lg:p-8 font-sans selection:bg-orange-500/20 relative">
       {/* Premium Content Split Card */}
-      <div className="w-full max-w-5xl bg-white rounded-[24px] shadow-[0_24px_70px_rgba(15,23,42,0.08)] overflow-hidden flex min-h-[660px]">
+      <div className="w-full max-w-5xl bg-white rounded-[24px] shadow-[0_24px_70px_rgba(15,23,42,0.08)] overflow-hidden flex min-h-[660px] relative">
         
+        {/* Close Button */}
+      <button
+  onClick={handleClose}
+  className="absolute top-4 right-4 z-20 p-2.5 text-slate-900 hover:text-white hover:bg-rose-500 rounded-full transition-all duration-300 ease-out hover:scale-110 hover:rotate-90 focus:outline-none group"
+  aria-label="Close"
+>
+  <FiX 
+    size={22} 
+    className="transition-transform duration-300 group-hover:rotate-90" 
+  />
+</button>
+
         {/* Left Section: Professional Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center px-8 py-12 sm:px-16">
           <div className="w-full max-w-sm">
@@ -79,20 +95,8 @@ const StudentLogin = () => {
               </p>
             </div>
 
-            {/* Social Authentication Matrix */}
-            {/* <div className="grid grid-cols-3 gap-3 mb-6">
-              <button type="button" className="border border-slate-200 rounded-xl py-3 flex justify-center items-center hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-                <FaApple size={20} className="text-slate-900" />
-              </button>
-
-              <button type="button" className="border border-slate-200 rounded-xl py-3 flex justify-center items-center hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-                <FaDiscord size={20} className="text-[#5865F2]" />
-              </button>
-
-              <button type="button" className="border border-slate-200 rounded-xl py-3 flex justify-center items-center hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-                <FaGoogle size={18} className="text-[#EA4335]" />
-              </button>
-            </div> */}
+            {/* Social Authentication Matrix (commented out) */}
+            {/* ... */}
 
             {/* Clean Horizontal Divider */}
             <div className="flex items-center mb-6">
@@ -191,7 +195,7 @@ const StudentLogin = () => {
           {/* Full-bleed Container Layer */}
           <div className="w-full flex justify-center items-end mt-4 relative h-full">
             <img 
-              src="/images/Lms.png" 
+              src="/img/Lms.png" 
               alt="LMS Platform Student Workspace" 
               className="w-full h-auto max-h-[490px] object-cover object-top filter contrast-[1.02]"
             />

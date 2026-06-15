@@ -15,7 +15,7 @@ const Navbar = () => {
     dispatch(logout())
     setIsDropdownOpen(false)
     setIsOpen(false)
-    navigate('/login')
+    navigate('/student-login')
   }
 
   // Removed 'Home' from navLinks
@@ -116,7 +116,8 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-2.5 border-l border-slate-800 pl-4">
-                <Link to="/login" className="text-slate-300 hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all">
+                {/* ✅ Fixed: desktop login now points to /student-login */}
+                <Link to="/student-login" className="text-slate-300 hover:text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all">
                   Login
                 </Link>
                 <Link to="/register" className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-orange-500/10 transition-all active:scale-95">
@@ -179,7 +180,7 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2.5 pt-4 mt-2 border-t border-slate-800">
-                <Link to="/login" onClick={() => setIsOpen(false)} className="border border-slate-700 text-slate-300 text-center py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800">
+                <Link to="/student-login" onClick={() => setIsOpen(false)} className="border border-slate-700 text-slate-300 text-center py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800">
                   Login
                 </Link>
                 <Link to="/register" onClick={() => setIsOpen(false)} className="bg-orange-500 text-white text-center py-2.5 rounded-xl text-sm font-bold shadow-md">

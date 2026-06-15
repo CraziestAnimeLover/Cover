@@ -19,6 +19,5 @@ router.post('/webhook', express.raw({ type: 'application/json' }), handleWebhook
 
 // Razorpay routes (public – used during registration)
 router.post('/create-razorpay-order', createRazorpayOrder);
-router.post('/verify-payment', verifyPayment);
-
+router.post('/verify-payment', protect, verifyPayment);
 export default router;

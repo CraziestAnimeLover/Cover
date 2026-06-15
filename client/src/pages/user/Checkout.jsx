@@ -1,129 +1,185 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiCreditCard, FiLock, FiCheckCircle } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
+import { FiCreditCard, FiLock, FiShield, FiArrowRight } from 'react-icons/fi';
 
 const Checkout = () => {
+  const { state } = useLocation();
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState('card');
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+  // Get course details from navigation state
+  const courseId = state?.courseId;
+  const coursePrice = state?.coursePrice || 4999;
+  const courseTitle = state?.courseTitle || 'Course Enrollment';
+
+  useEffect(() => {
+    // Redirect if not logged in
+    if (!user && !loading) {
+      navigate('/student-login');
+      return;
+    }
+    // Load Razorpay script
+    if (!document.querySelector('#razorpay-script')) {
+      const script = document.createElement('script');
+      script.id = 'razorpay-script';
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => setRazorpayLoaded(true);
+      document.body.appendChild(script);
+    } else {
+      setRazorpayLoaded(true);
+    }
+  }, [user, navigate]);
 
   const handlePayment = async () => {
+    if (!razorpayLoaded) {
+      toast.error('Payment system is loading. Please try again.');
+      return;
+    }
+
     setLoading(true);
-    // Simulate payment resolution
-    setTimeout(() => {
+    try {
+      // 1. Create order on backend
+      const { data } = await api.post('/payments/create-razorpay-order', {
+        courseId,
+        amount: coursePrice,
+        currency: 'INR',
+        receipt: `receipt_${Date.now()}`,
+        notes: {
+          userId: user?._id,
+          courseId,
+        },
+      });
+
+      const { order, amount, course } = data;
+
+      // 2. Configure Razorpay options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'LMS Platform',
+        description: `Purchase of ${course.title}`,
+        order_id: order.id,
+        prefill: {
+          name: user?.name,
+          email: user?.email,
+          contact: user?.phone || '',
+        },
+        theme: {
+          color: '#6366f1',
+        },
+        handler: async (response) => {
+          // 3. Verify payment on backend
+          try {
+            await api.post('/payments/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              courseId,
+              amount,
+            });
+            toast.success('Payment successful! You are now enrolled.');
+            navigate('/my-learning');
+          } catch (err) {
+            console.error(err);
+            toast.error('Payment verification failed. Please contact support.');
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            toast.error('Payment cancelled.');
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Failed to initiate payment');
+    } finally {
       setLoading(false);
-      navigate('/my-learning');
-    }, 2000);
+    }
   };
 
-  return (
-    <div className="max-w-5xl mx-auto px-4 py-4 font-sans selection:bg-orange-500/20">
-      
-      {/* View Header Section */}
-      <div className="mb-8 border-b border-slate-100 pb-6">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Checkout Securely</h1>
-        <p className="text-slate-500 text-sm font-medium mt-1">
-          Finalize your enrollment selection and unlock your full learning syllabus.
-        </p>
+  if (!courseId) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-red-500">Invalid checkout session. Please go back and select a course.</p>
+        <button onClick={() => navigate('/courses')} className="btn-primary mt-4">Browse Courses</button>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Side: Select Methods Block */}
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-12 font-sans">
+      <div className="text-center mb-10">
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Checkout Securely</h1>
+        <p className="text-slate-500 text-sm mt-2">Finalize your enrollment selection and unlock your full learning syllabus.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Payment Methods */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white border border-slate-100 rounded-[20px] shadow-[0_12px_40px_rgba(0,0,0,0.02)] p-6">
-            <h2 className="text-lg font-extrabold text-slate-900 tracking-tight mb-5 flex items-center gap-2">
-              <FiCreditCard className="text-orange-500 stroke-[2.5]" /> Select Payment Method
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
+              <FiCreditCard /> Select Payment Method
             </h2>
-            
-            <div className="space-y-3.5">
-              {/* Credit / Debit Options card */}
-              <label 
-                className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
-                  selectedMethod === 'card' 
-                    ? 'border-orange-500 bg-orange-50/30 ring-1 ring-orange-500/20' 
-                    : 'border-slate-200 hover:bg-slate-50/50 hover:border-slate-300'
-                }`}
-                onClick={() => setSelectedMethod('card')}
-              >
-                <input 
-                  type="radio" 
-                  name="payment" 
-                  checked={selectedMethod === 'card'}
-                  onChange={() => setSelectedMethod('card')}
-                  className="w-4 h-4 accent-orange-600 border-slate-300 mr-4 cursor-pointer focus:ring-0" 
-                />
-                <div className="flex-1">
-                  <p className="font-bold text-slate-800 text-sm tracking-tight">Credit / Debit Card</p>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">Pay securely using Visa, Mastercard, or RuPay networks.</p>
+            <div className="space-y-3">
+              <label className="flex items-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                <input type="radio" name="payment" defaultChecked className="mr-3 accent-orange-500" />
+                <div>
+                  <p className="font-medium">Credit / Debit Card</p>
+                  <p className="text-xs text-slate-500">Pay securely using Visa, Mastercard, or RuPay networks.</p>
                 </div>
               </label>
-              
-              {/* UPI Options card */}
-              <label 
-                className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
-                  selectedMethod === 'upi' 
-                    ? 'border-orange-500 bg-orange-50/30 ring-1 ring-orange-500/20' 
-                    : 'border-slate-200 hover:bg-slate-50/50 hover:border-slate-300'
-                }`}
-                onClick={() => setSelectedMethod('upi')}
-              >
-                <input 
-                  type="radio" 
-                  name="payment" 
-                  checked={selectedMethod === 'upi'}
-                  onChange={() => setSelectedMethod('upi')}
-                  className="w-4 h-4 accent-orange-600 border-slate-300 mr-4 cursor-pointer focus:ring-0" 
-                />
-                <div className="flex-1">
-                  <p className="font-bold text-slate-800 text-sm tracking-tight">Instant UPI Gateway</p>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">Authorize directly with Google Pay, PhonePe, or Paytm apps.</p>
+              <label className="flex items-center p-4 border rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                <input type="radio" name="payment" className="mr-3 accent-orange-500" />
+                <div>
+                  <p className="font-medium">Instant UPI Gateway</p>
+                  <p className="text-xs text-slate-500">Authorize directly with Google Pay, PhonePe, or Paytm apps.</p>
                 </div>
               </label>
             </div>
           </div>
+
+          {/* Security Badge */}
+          <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
+            <FiLock size={14} />
+            <span>Your payment details are encrypted and secure</span>
+            <FiShield size={14} />
+          </div>
         </div>
 
-        {/* Right Side: Order Summary sticky container */}
+        {/* Order Summary */}
         <div className="lg:col-span-1">
-          <div className="bg-white border border-slate-100 rounded-[20px] shadow-[0_12px_40px_rgba(0,0,0,0.02)] p-6 sticky top-24">
-            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight border-b border-slate-100 pb-4 mb-4">
-              Order Summary
-            </h3>
-            
-            <div className="space-y-3 mb-6 text-sm font-medium text-slate-500">
-              <div className="flex justify-between items-center">
-                <span>Modules Selected</span>
-                <span className="text-slate-800 font-bold">1 Course</span>
-              </div>
-              <div className="border-t border-slate-100 pt-4 mt-4">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-slate-900 font-bold">Total Amount</span>
-                  <span className="text-2xl font-black text-orange-600 tracking-tight">MAXX_TOTAL₹4,999</span>
-                </div>
-              </div>
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-md sticky top-24">
+            <h3 className="text-lg font-bold text-slate-800 border-b pb-3 mb-3">Order Summary</h3>
+            <div className="flex justify-between text-sm py-2">
+              <span>Modules Selected</span>
+              <span>1 Course</span>
             </div>
-
-            {/* Gateway Checkout Submission CTA */}
+            <div className="flex justify-between text-sm py-2 font-semibold border-t pt-3 mt-2">
+              <span>Total Amount</span>
+              <span className="text-xl text-orange-600">₹{coursePrice}</span>
+            </div>
             <button
-              type="button"
               onClick={handlePayment}
               disabled={loading}
-              className="w-full h-12 bg-slate-900 hover:bg-orange-600 text-white rounded-xl font-bold transition-all shadow-md hover:shadow-orange-500/20 tracking-wide text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed select-none"
+              className="w-full mt-6 bg-slate-900 hover:bg-orange-600 text-white py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-400 border-t-transparent data-theme-loader"></div>
-              ) : (
-                <>
-                  <FiLock className="stroke-[2.5]" />
-                  <span>Authorize Payment • ₹4,999</span>
-                </>
-              )}
+              {loading ? 'Processing...' : 'Pay Now'}
+              <FiArrowRight />
             </button>
-            
-            <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-bold uppercase tracking-wider text-center mt-4 bg-slate-50 py-2 rounded-xl border border-slate-100/60">
-              <FiCheckCircle className="text-emerald-500 stroke-[2.5]" />
-              <span>AES 256-Bit Secure Encryption</span>
-            </div>
+            <p className="text-[10px] text-slate-400 text-center mt-4 flex items-center justify-center gap-1">
+              <FiLock size={10} /> AES 256-Bit Secure Encryption
+            </p>
           </div>
         </div>
       </div>
