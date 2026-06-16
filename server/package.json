@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "seed:admin": "node jobs/seedAdmin.js"
+    "seed:admin": "node jobs/seedAdmin.js",
+    "test:mlm": "mocha tests/mlmCommission.test.js --exit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1066.0",
@@ -31,6 +32,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "chai": "^6.2.2",
+    "mocha": "^11.7.6",
     "nodemon": "^3.1.4"
   }
 }

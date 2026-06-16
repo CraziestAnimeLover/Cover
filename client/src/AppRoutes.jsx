@@ -45,6 +45,7 @@ import DownlineTree from './pages/affiliate/DownlineTree'
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard'
 import ManageUsers from './pages/admin/ManageUsers'
+import ManageBanners from './pages/admin/ManageBanners';
 import AdminNetworkExplorer from './pages/admin/AdminNetworkExplorer';
 import ManageCourses from './pages/admin/ManageCourses'
 import ManagePayouts from './pages/admin/ManagePayouts'
@@ -115,6 +116,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
         <Route element={<DashboardLayout />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/banners" element={<ManageBanners />} />
           <Route path="/admin/users" element={<ManageUsers />} />
           <Route path="/admin/courses" element={<ManageCourses />} />
           <Route path="/admin/payouts" element={<ManagePayouts />} />

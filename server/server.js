@@ -19,6 +19,7 @@ import courseRoutes from './routes/courseRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
+import bannerRoutes from './routes/bannerRoutes.js';
 import referralRoutes from './routes/referralRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
@@ -64,7 +65,7 @@ app.use('/api/resources', resourceRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/analytics', analyticsRoutes);
-
+app.use('/api/banners', bannerRoutes);
 // 404 + error handling
 app.use((_req, res) => {
   res.status(404).json({ message: 'Not Found' });
